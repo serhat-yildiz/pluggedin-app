@@ -13,7 +13,7 @@ interface ServerHeroProps {
 export function ServerHero({ onAddServer }: ServerHeroProps) {
   const { t } = useTranslation();
   return (
-    <div className="bg-gradient-to-r from-indigo-500/5 via-indigo-500/10 to-purple-500/10 dark:from-indigo-950/20 dark:via-indigo-900/20 dark:to-purple-900/20 p-6 rounded-lg border dark:border-slate-800">
+    <div className="w-full bg-gradient-to-r from-indigo-500/5 via-indigo-500/10 to-purple-500/10 dark:from-indigo-950/20 dark:via-indigo-900/20 dark:to-purple-900/20 p-6 rounded-lg border dark:border-slate-800">
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="space-y-2">
           <Badge className="bg-indigo-500/10 text-indigo-700 dark:bg-indigo-500/20 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800 mb-2">

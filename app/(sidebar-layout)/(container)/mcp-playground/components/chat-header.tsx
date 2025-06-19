@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, Settings, X, Zap } from 'lucide-react';
+import { ChevronDown, PowerOff, Settings, Zap } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,12 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip';
 
 interface ChatHeaderProps {
   currentModel: {
@@ -87,40 +93,41 @@ export function ChatHeader({
   const { t } = useTranslation();
 
   return (
-    <div className="bg-background/95 backdrop-blur-sm border-b border-border px-6 py-4">
-      <div className="flex items-center justify-between max-w-full">
+    <div className="bg-background/95 backdrop-blur-sm border-b border-border px-4 py-[22px]">
+      <div className="flex items-center justify-between gap-4">
         {/* Left: Current Model Info */}
-        <div className="flex items-center space-x-4 min-w-0 flex-1">
-          <div className="flex items-center space-x-3 min-w-0">
+        <div className="flex items-center gap-3 min-w-0">
+          {/* Model Provider Info */}
+          <div className="flex items-center gap-2 min-w-0">
             <div className="flex-shrink-0">
               {PROVIDER_INFO[currentModel.provider].icon}
             </div>
-            <div className="min-w-0">
-              <div className="flex items-center space-x-2">
-                <h2 className="text-lg font-semibold truncate">
+            <div className="min-w-0 hidden sm:block">
+              <div className="flex items-center gap-2">
+                <h2 className="text-sm font-semibold truncate">
                   {PROVIDER_INFO[currentModel.provider].name}
                 </h2>
-                <span className="text-sm font-medium px-2 py-1 bg-primary/10 text-primary rounded-full whitespace-nowrap">
+                <span className="text-xs font-medium px-1.5 py-0.5 bg-primary/10 text-primary rounded-full truncate">
                   {getModelDisplayName(currentModel.model)}
                 </span>
               </div>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-xs text-muted-foreground truncate">
                 {t('playground.chat.header.temperature')}: {currentModel.temperature || 0} • {t('playground.chat.header.maxTokens')}: {currentModel.maxTokens || 1000}
               </p>
             </div>
           </div>
 
           {/* Connection Status */}
-          <div className="flex items-center space-x-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 border-l border-border pl-3">
             <div className={`w-2 h-2 rounded-full ${isSessionActive ? 'bg-green-500' : 'bg-gray-400'}`} />
-            <span className="text-sm text-muted-foreground">
+            <span className="text-xs text-muted-foreground whitespace-nowrap">
               {serverCount} {serverCount === 1 ? t('playground.chat.header.serverConnected') : t('playground.chat.header.serversConnected')}
             </span>
           </div>
         </div>
 
         {/* Right: Actions */}
-        <div className="flex items-center space-x-3 flex-shrink-0">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {/* Quick Model Switcher */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -128,23 +135,23 @@ export function ChatHeader({
                 variant="outline" 
                 size="sm"
                 disabled={isProcessing}
-                className="whitespace-nowrap"
+                className="h-8 px-2 text-xs"
               >
-                <Zap className="w-4 h-4 mr-2" />
+                <Zap className="w-3 h-3 mr-1" />
                 {t('playground.chat.header.switchModel')}
-                <ChevronDown className="w-4 h-4 ml-2" />
+                <ChevronDown className="w-3 h-3 ml-1" />
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" className="w-64">
+            <DropdownMenuContent align="end" className="w-56">
               {QUICK_MODELS.map((model) => (
                 <DropdownMenuItem
                   key={`${model.provider}-${model.model}`}
                   onClick={() => onModelSwitch(model.provider, model.model)}
-                  className="flex items-center justify-between"
+                  className="flex items-center justify-between py-1.5"
                 >
-                  <div className="flex items-center space-x-2">
+                  <div className="flex items-center gap-2">
                     {PROVIDER_INFO[model.provider].icon}
-                    <span className="font-medium">{model.name}</span>
+                    <span className="text-sm">{model.name}</span>
                   </div>
                   {currentModel.provider === model.provider && currentModel.model === model.model && (
                     <div className="w-2 h-2 rounded-full bg-primary" />
@@ -152,38 +159,46 @@ export function ChatHeader({
                 </DropdownMenuItem>
               ))}
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={onOpenSettings}>
-                <Settings className="w-4 h-4 mr-2" />
-                {t('playground.chat.header.moreModels')}
+              <DropdownMenuItem onClick={onOpenSettings} className="py-1.5">
+                <Settings className="w-3 h-3 mr-2" />
+                <span className="text-sm">{t('playground.chat.header.moreModels')}</span>
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
           {/* Stop Session Button */}
           {isSessionActive && (
-            <Button 
-              variant="destructive" 
-              size="sm"
-              onClick={onEndSession}
-              disabled={isProcessing}
-              className="whitespace-nowrap"
-            >
-              {isProcessing ? (
-                <>
-                  <div className="w-4 h-4 mr-2 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  {t('playground.chat.header.stopping')}
-                </>
-              ) : (
-                <>
-                  <X className="w-4 h-4 mr-2" />
-                  {t('playground.chat.header.stopSession')}
-                </>
-              )}
-            </Button>
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant="destructive" 
+                    size="sm"
+                    onClick={onEndSession}
+                    disabled={isProcessing}
+                    className="h-8 w-8 p-0"
+                  >
+                    {isProcessing ? (
+                      <div className="w-4 h-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                    ) : (
+                      <PowerOff className="w-4 h-4" />
+                    )}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{t('playground.chat.header.stopSession')}</p>
+                </TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
           )}
 
           {/* Settings Button */}
-          <Button variant="ghost" size="sm" onClick={onOpenSettings}>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={onOpenSettings}
+            className="h-8 w-8 p-0"
+          >
             <Settings className="w-4 h-4" />
           </Button>
         </div>

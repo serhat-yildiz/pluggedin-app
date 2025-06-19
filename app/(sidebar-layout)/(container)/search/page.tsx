@@ -1,6 +1,6 @@
 'use client';
 
-import { Filter, Layers, SortDesc } from 'lucide-react';
+import { Filter, Layers, Search, SortDesc } from 'lucide-react';
 import * as LucideIcons from 'lucide-react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
@@ -206,218 +206,257 @@ function SearchContent() {
   };
 
   return (
-    <div className='container mx-auto py-8 space-y-6 flex flex-col items-center'>
-      <h1 className='text-2xl font-bold'>
-        {t('search.title')}
-      </h1>
-      <p className='text-muted-foreground text-center'>
-        {t('search.subtitle')}
-      </p>
-      
-      <div className="w-full max-w-xl mx-auto">
-        <Input
-          type='search'
-          placeholder={t('search.input.placeholder')}
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className='mb-6 h-10'
-        />
-        
-        <div className="flex flex-col md:flex-row items-center justify-between mb-4 gap-4">
-          <Tabs defaultValue={source} onValueChange={handleSourceChange} className="w-full">
-            <TabsList className="w-full h-10 flex rounded-lg">
-              <TabsTrigger value={McpServerSource.COMMUNITY} className="flex-1">Community</TabsTrigger>
-              <TabsTrigger value="all" className="flex-1">All Sources</TabsTrigger>
-              <TabsTrigger value={McpServerSource.SMITHERY} className="flex-1">Smithery</TabsTrigger>
-              <TabsTrigger value={McpServerSource.NPM} className="flex-1">NPM</TabsTrigger>
-              <TabsTrigger value={McpServerSource.GITHUB} className="flex-1">GitHub</TabsTrigger>
-            </TabsList>
-          </Tabs>
-          
-          <div className="flex space-x-2 shrink-0">
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Layers className="h-4 w-4 mr-2" />
-                  {t('search.category')}
-                  {category && <span className="ml-1">({t(`search.categories.${category}`)})</span>}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>{t('search.filterByCategory')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                
-                <DropdownMenuItem 
-                  onClick={() => handleCategoryChange('')}
-                  className={!category ? 'bg-accent' : ''}
-                >
-                  {t('search.allCategories')}
-                </DropdownMenuItem>
-                
-                <DropdownMenuSeparator />
-                
-                {availableCategories.length > 0 ? (
-                  <div className="max-h-56 overflow-y-auto">
-                    {availableCategories.map(cat => (
-                      <DropdownMenuItem 
-                        key={cat}
-                        onClick={() => handleCategoryChange(cat)}
-                        className={category === cat ? 'bg-accent' : ''}
-                      >
-                        {renderCategoryIcon(cat)}
-                        {t(`search.categories.${cat}`)}
-                      </DropdownMenuItem>
-                    ))}
-                  </div>
-                ) : (
-                  <DropdownMenuItem disabled>
-                    {t('search.noCategoriesAvailable')}
-                  </DropdownMenuItem>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <SortDesc className="h-4 w-4 mr-2" />
-                  {t('search.sort')}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>{t('search.sortBy')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuGroup>
-                  <DropdownMenuItem 
-                    onClick={() => handleSortChange('relevance')}
-                    className={sort === 'relevance' ? 'bg-accent' : ''}
-                  >
-                    {t('search.sortOptions.relevance')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleSortChange('popularity')}
-                    className={sort === 'popularity' ? 'bg-accent' : ''}
-                  >
-                    {t('search.sortOptions.popularity')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleSortChange('recent')}
-                    className={sort === 'recent' ? 'bg-accent' : ''}
-                  >
-                    {t('search.sortOptions.recent')}
-                  </DropdownMenuItem>
-                  <DropdownMenuItem 
-                    onClick={() => handleSortChange('stars')}
-                    className={sort === 'stars' ? 'bg-accent' : ''}
-                  >
-                    {t('search.sortOptions.stars')}
-                  </DropdownMenuItem>
-                </DropdownMenuGroup>
-              </DropdownMenuContent>
-            </DropdownMenu>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Filter className="h-4 w-4 mr-2" />
-                  {t('search.filter')}
-                  {tags.length > 0 && <span className="ml-1">({tags.length})</span>}
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>{t('search.filterByTags')}</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                {availableTags.length > 0 ? (
-                  <div className="max-h-56 overflow-y-auto">
-                    {availableTags.map(tag => (
-                      <DropdownMenuItem 
-                        key={tag}
-                        onClick={() => handleTagToggle(tag)}
-                        className={tags.includes(tag) ? 'bg-accent' : ''}
-                      >
-                        {tag}
-                      </DropdownMenuItem>
-                    ))}
-                  </div>
-                ) : (
-                  <DropdownMenuItem disabled>
-                    {t('search.noTagsAvailable')}
-                  </DropdownMenuItem>
-                )}
-                {tags.length > 0 && (
-                  <>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem onClick={() => setTags([])}>
-                      {t('search.clearFilters')}
-                    </DropdownMenuItem>
-                  </>
-                )}
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        
-        {/* Active filters display */}
-        {(category || tags.length > 0) && (
-          <div className="flex flex-wrap gap-2 mb-4">
-            {category && (
-              <Badge variant="secondary" className="flex items-center gap-1">
-                {renderCategoryIcon(category)}
-                {t(`search.categories.${category}`)}
-                <button
-                  className="ml-1 hover:bg-accent p-1 rounded-full"
-                  onClick={() => handleCategoryChange('')}
-                >
-                  ✕
-                </button>
-              </Badge>
-            )}
-            
-            {tags.map(tag => (
-              <Badge key={tag} variant="outline">
-                #{tag}
-                <button
-                  className="ml-1 hover:bg-accent p-1 rounded-full"
-                  onClick={() => handleTagToggle(tag)}
-                >
-                  ✕
-                </button>
-              </Badge>
-            ))}
-            
-            {(category || tags.length > 0) && (
-              <Button 
-                variant="ghost" 
-                size="sm" 
-                className="h-6 text-xs"
-                onClick={() => {
-                  setCategory('');
-                  setTags([]);
-                }}
-              >
-                {t('search.clearAllFilters')}
-              </Button>
-            )}
-          </div>
-        )}
+    <div className="container-fluid h-[calc(100vh-2rem)] flex flex-col bg-background py-4 space-y-4">
+      {/* Hero Section */}
+      <div className="flex flex-col space-y-1.5">
+        <h1 className="text-2xl font-bold tracking-tight">{t('search.title')}</h1>
+        <p className="text-muted-foreground">
+          {t('search.subtitle')}
+        </p>
       </div>
 
-      {data?.results && (
-        <CardGrid
-          items={getSortedResults() || {}}
-          installedServerMap={installedServerMap}
-          currentUsername={currentUsername} // Pass the correct username
-          onRefreshNeeded={() => mutate()}
-        />
-      )}
+      {/* Search Controls */}
+      <div className="flex flex-wrap gap-4">
+        <div className="w-full">
+          <Input
+            type='search'
+            placeholder={t('search.input.placeholder')}
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className='mb-6 h-10 max-w-xl'
+          />
+          
+          <div className="flex flex-col md:flex-row items-start justify-between mb-4 gap-4">
+            <Tabs defaultValue={source} onValueChange={handleSourceChange} className="w-full md:w-auto">
+              <TabsList className="w-full md:w-auto h-10 flex rounded-lg">
+                <TabsTrigger value={McpServerSource.COMMUNITY} className="flex-1 md:flex-none px-4">Community</TabsTrigger>
+                <TabsTrigger value="all" className="flex-1 md:flex-none px-4">All Sources</TabsTrigger>
+                <TabsTrigger value={McpServerSource.SMITHERY} className="flex-1 md:flex-none px-4">Smithery</TabsTrigger>
+                <TabsTrigger value={McpServerSource.NPM} className="flex-1 md:flex-none px-4">NPM</TabsTrigger>
+                <TabsTrigger value={McpServerSource.GITHUB} className="flex-1 md:flex-none px-4">GitHub</TabsTrigger>
+              </TabsList>
+            </Tabs>
+            
+            <div className="flex space-x-2 shrink-0 w-full md:w-auto">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Layers className="h-4 w-4 mr-2" />
+                    {t('search.category')}
+                    {category && <span className="ml-1">({t(`search.categories.${category}`)})</span>}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>{t('search.filterByCategory')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem 
+                    onClick={() => handleCategoryChange('')}
+                    className={!category ? 'bg-accent' : ''}
+                  >
+                    {t('search.allCategories')}
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  {availableCategories.length > 0 ? (
+                    <div className="max-h-56 overflow-y-auto">
+                      {availableCategories.map(cat => (
+                        <DropdownMenuItem 
+                          key={cat}
+                          onClick={() => handleCategoryChange(cat)}
+                          className={category === cat ? 'bg-accent' : ''}
+                        >
+                          {renderCategoryIcon(cat)}
+                          {t(`search.categories.${cat}`)}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  ) : (
+                    <DropdownMenuItem disabled>
+                      {t('search.noCategoriesAvailable')}
+                    </DropdownMenuItem>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <SortDesc className="h-4 w-4 mr-2" />
+                    {t('search.sort')}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>{t('search.sortBy')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem 
+                      onClick={() => handleSortChange('relevance')}
+                      className={sort === 'relevance' ? 'bg-accent' : ''}
+                    >
+                      {t('search.sortOptions.relevance')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleSortChange('popularity')}
+                      className={sort === 'popularity' ? 'bg-accent' : ''}
+                    >
+                      {t('search.sortOptions.popularity')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleSortChange('recent')}
+                      className={sort === 'recent' ? 'bg-accent' : ''}
+                    >
+                      {t('search.sortOptions.recent')}
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleSortChange('stars')}
+                      className={sort === 'stars' ? 'bg-accent' : ''}
+                    >
+                      {t('search.sortOptions.stars')}
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
+                </DropdownMenuContent>
+              </DropdownMenu>
+              
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm">
+                    <Filter className="h-4 w-4 mr-2" />
+                    {t('search.filter')}
+                    {tags.length > 0 && <span className="ml-1">({tags.length})</span>}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuLabel>{t('search.filterByTags')}</DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  {availableTags.length > 0 ? (
+                    <div className="max-h-56 overflow-y-auto">
+                      {availableTags.map(tag => (
+                        <DropdownMenuItem 
+                          key={tag}
+                          onClick={() => handleTagToggle(tag)}
+                          className={tags.includes(tag) ? 'bg-accent' : ''}
+                        >
+                          {tag}
+                        </DropdownMenuItem>
+                      ))}
+                    </div>
+                  ) : (
+                    <DropdownMenuItem disabled>
+                      {t('search.noTagsAvailable')}
+                    </DropdownMenuItem>
+                  )}
+                  {tags.length > 0 && (
+                    <>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={() => setTags([])}>
+                        {t('search.clearFilters')}
+                      </DropdownMenuItem>
+                    </>
+                  )}
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          </div>
+          
+          {/* Active filters display */}
+          {(category || tags.length > 0) && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {category && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  {renderCategoryIcon(category)}
+                  {t(`search.categories.${category}`)}
+                  <button
+                    className="ml-1 hover:bg-accent p-1 rounded-full"
+                    onClick={() => handleCategoryChange('')}
+                  >
+                    ✕
+                  </button>
+                </Badge>
+              )}
+              
+              {tags.map(tag => (
+                <Badge key={tag} variant="outline">
+                  #{tag}
+                  <button
+                    className="ml-1 hover:bg-accent p-1 rounded-full"
+                    onClick={() => handleTagToggle(tag)}
+                  >
+                    ✕
+                  </button>
+                </Badge>
+              ))}
+              
+              {(category || tags.length > 0) && (
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="h-6 text-xs"
+                  onClick={() => {
+                    setCategory('');
+                    setTags([]);
+                  }}
+                >
+                  {t('search.clearAllFilters')}
+                </Button>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
 
-      {data && data.total > 0 && (
-        <PaginationUi
-          currentPage={Math.floor(offset / PAGE_SIZE) + 1}
-          totalPages={Math.ceil(data.total / PAGE_SIZE)}
-          onPageChange={handlePageChange}
-        />
-      )}
+      {/* Results Section */}
+      <div className="flex-1 min-h-0 pt-6">
+        {data?.results && (
+          <>
+            {/* Results count and pagination */}
+            <div className="flex items-center justify-between mb-6">
+              <p className="text-sm text-muted-foreground">
+                {t('search.resultsCount', { count: data.total })}
+              </p>
+              <PaginationUi
+                currentPage={Math.floor(offset / PAGE_SIZE) + 1}
+                totalPages={Math.ceil(data.total / PAGE_SIZE)}
+                onPageChange={handlePageChange}
+              />
+            </div>
+
+            {/* Results grid */}
+            <CardGrid
+              items={data.results}
+              installedServerMap={installedServerMap}
+              onRefreshNeeded={() => mutate()}
+            />
+
+            {/* Empty state */}
+            {data.results.length === 0 && (
+              <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                <Search className="h-12 w-12 text-muted-foreground/50" />
+                <div className="text-center space-y-2">
+                  <h3 className="font-semibold">{t('search.empty.title')}</h3>
+                  <p className="text-muted-foreground">
+                    {searchQuery
+                      ? t('search.empty.noResults', { query: searchQuery })
+                      : t('search.empty.startTyping')}
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Bottom pagination */}
+            {data.results.length > 0 && (
+              <div className="flex justify-center mt-6">
+                <PaginationUi
+                  currentPage={Math.floor(offset / PAGE_SIZE) + 1}
+                  totalPages={Math.ceil(data.total / PAGE_SIZE)}
+                  onPageChange={handlePageChange}
+                />
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

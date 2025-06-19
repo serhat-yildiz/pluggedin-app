@@ -260,14 +260,13 @@ export default function MCPServersPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="container-fluid h-[calc(100vh-2rem)] flex flex-col bg-background py-4 space-y-4">
       <ServerHero onAddServer={() => setOpen(true)} />
       <ServerStats servers={servers} />
 
       {/* Main content */}
-      <div className="space-y-4">
-        {/* Mobile-optimized header */}
-        <div className="flex flex-col space-y-4 sm:flex-row sm:justify-between sm:items-center sm:space-y-0">
+      <div className="flex-1 min-h-0 flex flex-col space-y-4">
+        <div className="flex items-center justify-between gap-4">
           {/* Search and view toggle */}
           <div className="flex items-center space-x-2 w-full sm:w-auto">
             <Input
@@ -316,7 +315,7 @@ export default function MCPServersPage() {
 
       {/* Server list */}
       {viewMode === 'grid' ? (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 pt-10 pb-6">
           {table.getRowModel().rows.map((row) => (
             <ServerCard
               key={row.original.uuid}

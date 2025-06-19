@@ -69,9 +69,9 @@ export function PlaygroundChat({
   }, [messages.length, rowVirtualizer]);
 
   return (
-    <div className='flex flex-col h-[calc(100vh-9rem)] bg-background'>
+    <div className='flex flex-col h-full bg-background'>
       {/* Chat Messages Area */}
-      <div ref={parentRef} className='flex-1 overflow-y-auto p-4'>
+      <div ref={parentRef} className='flex-1 overflow-y-auto overflow-x-hidden'>
         <div 
           style={{ 
             height: `${rowVirtualizer.getTotalSize()}px`,
@@ -83,12 +83,12 @@ export function PlaygroundChat({
           }}
         >
           {messages.length === 0 ? (
-            <div className='w-full flex flex-col items-center justify-center text-center p-8'>
-              <div className='bg-muted/30 rounded-full p-6 mb-6'>
-                <Settings className='h-12 w-12 text-primary/40' />
+            <div className='w-full flex flex-col items-center justify-center text-center p-4'>
+              <div className='bg-muted/30 rounded-full p-4 mb-4'>
+                <Settings className='h-8 w-8 text-primary/40' />
               </div>
-              <h3 className='text-xl font-semibold mb-3'>{t('playground.chat.empty.title')}</h3>
-              <p className='text-muted-foreground max-w-md mb-6 leading-relaxed'>
+              <h3 className='text-lg font-semibold mb-2'>{t('playground.chat.empty.title')}</h3>
+              <p className='text-sm text-muted-foreground max-w-[280px] mx-auto'>
                 {isSessionActive
                   ? t('playground.chat.empty.activeDescription')
                   : t('playground.chat.empty.inactiveDescription')}
@@ -108,15 +108,15 @@ export function PlaygroundChat({
                   ref={rowVirtualizer.measureElement}
                   className={`absolute top-0 left-0 w-full flex ${
                     message.role === 'human' ? 'justify-end' : 'justify-start'
-                  }`}
+                  } px-4`}
                   style={{
                     transform: `translateY(${virtualRow.start}px)`,
                     paddingBottom: '1rem',
                   }}>
                   <div
-                    className={`rounded-xl p-4 max-w-[85%] shadow-sm ${
+                    className={`rounded-xl p-4 max-w-[85%] shadow-sm overflow-hidden ${
                       message.role === 'human'
-                        ? 'bg-primary text-primary-foreground ml-4'
+                        ? 'bg-primary text-primary-foreground'
                         : message.role === 'tool'
                           ? 'bg-muted/80 border border-muted-foreground/10'
                           : message.isPartial
@@ -208,7 +208,7 @@ export function PlaygroundChat({
       {/* Input Area */}
       <div className='p-4 bg-background/95 backdrop-blur-sm'>
         {isSessionActive ? (
-          <div className='flex w-full items-end space-x-3 max-w-4xl mx-auto'>
+          <div className='flex w-full items-end space-x-3 max-w-3xl mx-auto'>
             <Textarea
               placeholder={t('playground.chat.input.activePlaceholder')}
               value={inputValue}
