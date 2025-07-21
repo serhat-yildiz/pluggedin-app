@@ -4,7 +4,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  ExternalLink,
   FileText,
   Image as ImageIcon,
   Loader2,
@@ -15,18 +14,19 @@ import {
   ZoomOut,
 } from 'lucide-react';
 import dynamic from 'next/dynamic';
-import { useState, useCallback, useEffect } from 'react';
+import { useCallback, useEffect,useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { ModelAttributionBadge } from '@/components/library/ModelAttributionBadge';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
+import { ErrorBoundary } from '@/components/ui/error-boundary';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Separator } from '@/components/ui/separator';
-import { ErrorBoundary } from '@/components/ui/error-boundary';
+import { VisuallyHidden } from '@/components/ui/visually-hidden';
+import { getFileLanguage, isDocxFile, isImageFile, isMarkdownFile, isPDFFile, isTextFile, isTextFileByExtension, isValidTextMimeType, ZOOM_LIMITS } from '@/lib/file-utils';
 import { Doc } from '@/types/library';
-import { isTextFile, isPDFFile, isImageFile, getFileLanguage, isMarkdownFile, ZOOM_LIMITS, isValidTextMimeType } from '@/lib/file-utils';
 
 // Dynamic imports for heavy components
 const ReactMarkdown = dynamic(() => import('react-markdown'), { ssr: false });
@@ -59,6 +59,8 @@ export function DocumentPreview({
   const [currentDocIndex, setCurrentDocIndex] = useState(0);
   const [textContent, setTextContent] = useState<string | null>(null);
   const [isLoadingText, setIsLoadingText] = useState(false);
+  const [docxContent, setDocxContent] = useState<string | null>(null);
+  const [isLoadingDocx, setIsLoadingDocx] = useState(false);
 
   // Update current doc index when doc changes
   useEffect(() => {
@@ -88,7 +90,12 @@ export function DocumentPreview({
         .then(res => {
           // Validate content type before processing
           const contentType = res.headers.get('content-type');
-          if (!isValidTextMimeType(contentType)) {
+          
+          // Check both content-type and file extension as fallback
+          const isValidByContentType = isValidTextMimeType(contentType);
+          const isValidByExtension = doc?.name ? isTextFileByExtension(doc.name) : false;
+          
+          if (!isValidByContentType && !isValidByExtension) {
             throw new Error('Invalid content type for text processing');
           }
           return res.text();
@@ -114,6 +121,49 @@ export function DocumentPreview({
           setIsLoadingText(false);
         });
     }
+  }, [doc, open]);
+
+  // Fetch DOCX content for DOCX files
+  useEffect(() => {
+    if (!doc || !open) {
+      setDocxContent(null);
+      return;
+    }
+
+    if (!isDocxFile(doc.mime_type)) {
+      setDocxContent(null);
+      return;
+    }
+
+    setIsLoadingDocx(true);
+    setDocxContent(null);
+
+    fetch(`/api/documents/files/${doc.uuid}`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error('Failed to fetch DOCX file');
+        }
+        return res.arrayBuffer();
+      })
+      .then(async arrayBuffer => {
+        const mammoth = await import('mammoth');
+        const result = await mammoth.convertToHtml({ arrayBuffer });
+        
+        // Use DOMPurify for HTML sanitization
+        const DOMPurify = (await import('dompurify')).default;
+        const sanitized = DOMPurify.sanitize(result.value, { 
+          ALLOWED_TAGS: ['p', 'br', 'strong', 'em', 'u', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'thead', 'tbody'],
+          ALLOWED_ATTR: []
+        });
+        
+        setDocxContent(sanitized);
+        setIsLoadingDocx(false);
+      })
+      .catch(err => {
+        console.error('Failed to fetch DOCX content:', err);
+        setDocxContent(null);
+        setIsLoadingDocx(false);
+      });
   }, [doc, open]);
 
   const navigateToDoc = useCallback((direction: 'prev' | 'next') => {
@@ -231,6 +281,43 @@ export function DocumentPreview({
       );
     }
 
+    // DOCX files
+    if (isDocxFile(doc.mime_type)) {
+      if (isLoadingDocx) {
+        return (
+          <div className="flex-1 flex items-center justify-center">
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+          </div>
+        );
+      }
+
+      if (docxContent) {
+        return (
+          <div className="absolute inset-0 overflow-y-auto overflow-x-hidden">
+            <div className="p-6">
+              <div 
+                className="prose prose-sm dark:prose-invert max-w-none"
+                dangerouslySetInnerHTML={{ __html: docxContent }}
+              />
+            </div>
+          </div>
+        );
+      }
+
+      return (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center text-muted-foreground">
+            <FileText className="h-12 w-12 mx-auto mb-4 opacity-50" />
+            <p>Failed to load DOCX content</p>
+            <Button onClick={() => doc && onDownload(doc)} className="mt-4">
+              <Download className="mr-2 h-4 w-4" />
+              {t('preview.download')}
+            </Button>
+          </div>
+        </div>
+      );
+    }
+
     if (isText) {
       if (isLoadingText) {
         return (
@@ -245,22 +332,26 @@ export function DocumentPreview({
 
         if (isMarkdownFile(doc.file_name)) {
           return (
-            <ScrollArea className="flex-1 p-6">
-              <div className="prose prose-sm dark:prose-invert max-w-none">
-                <ReactMarkdown>{textContent}</ReactMarkdown>
+            <div className="absolute inset-0 overflow-y-auto overflow-x-hidden">
+              <div className="p-6">
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <ReactMarkdown>{textContent}</ReactMarkdown>
+                </div>
               </div>
-            </ScrollArea>
+            </div>
           );
         }
 
         return (
-          <ScrollArea className="flex-1">
-            <pre className="p-6 text-sm overflow-x-auto">
-              <code className={`language-${language}`}>
-                {textContent}
-              </code>
-            </pre>
-          </ScrollArea>
+          <div className="absolute inset-0 overflow-y-auto overflow-x-hidden">
+            <div className="p-6">
+              <pre className="text-sm overflow-x-auto">
+                <code className={`language-${language}`}>
+                  {textContent}
+                </code>
+              </pre>
+            </div>
+          </div>
         );
       }
 
@@ -295,12 +386,18 @@ export function DocumentPreview({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent 
-        className={`max-w-7xl ${isFullscreen ? 'h-screen max-h-screen' : 'h-[90vh]'} p-0 gap-0`}
+        className={`${isFullscreen ? 'w-screen h-screen max-w-none max-h-none rounded-none' : 'max-w-7xl h-[90vh] rounded-lg'} p-0 gap-0 overflow-hidden`}
         onInteractOutside={(e) => e.preventDefault()}
       >
+        <VisuallyHidden>
+          <DialogTitle>{doc?.name ? `${t('preview.documentTitle', 'Document')} - ${doc.name}` : t('preview.documentTitle', 'Document')}</DialogTitle>
+          <DialogDescription>
+            {doc ? `${t('preview.documentDescription', 'Preview of document')} ${doc.name} (${formatFileSize(doc.file_size)})` : t('preview.documentDescription', 'Preview of document')}
+          </DialogDescription>
+        </VisuallyHidden>
         <div className="flex flex-col h-full">
           {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+          <div className="flex items-center justify-between p-4 pr-12 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 rounded-t-lg">
             <div className="flex items-center gap-3 min-w-0 flex-1">
               {getFileIcon(doc.mime_type)}
               <div className="min-w-0 flex-1">
@@ -384,7 +481,7 @@ export function DocumentPreview({
           {/* Content */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
             {/* Main content area */}
-            <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-0 h-full overflow-hidden relative">
               <ErrorBoundary>
                 {renderDocumentContent()}
               </ErrorBoundary>
